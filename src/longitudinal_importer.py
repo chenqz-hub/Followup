@@ -54,6 +54,8 @@ class LongitudinalDataImporter:
     # 关键字段映射
     FIELD_MAPPING = {
         'patient_id': ['subjid', 'patient_id'],
+        'patient_name': ['stname', 'patient_name', '姓名'],
+        'birthday': ['sys_dateofbirth', 'dateofbirth', 'birthday', 'birth_date', '出生日期'],
         'enrollment_date': ['groupdate', 'enrollment_date'],
         'visit_date': ['随访日期1', 'visit_date'],
         'death_date': ['死亡时间1', 'death_date'],
@@ -286,6 +288,92 @@ class LongitudinalDataImporter:
                 return df[col].unique().tolist()
         return []
     
+    def _get_basic_info_sheet(self) -> Optional[pd.DataFrame]:
+        """
+        查找并返回基本信息Sheet（通常命名为'***基本信息'）
+        
+        Returns:
+            基本信息DataFrame或None
+        """
+        # 优先查找包含"基本信息"的sheet
+        for sheet_name, df in self.sheet_data.items():
+            if '基本信息' in sheet_name:
+                logger.info(f"找到基本信息Sheet: {sheet_name}")
+                return df
+        
+        # 如果没有找到，返回第一个sheet
+        if self.sheet_data:
+            first_sheet_name = list(self.sheet_data.keys())[0]
+            logger.warning(f"未找到'基本信息'Sheet，使用第一个Sheet: {first_sheet_name}")
+            return self.sheet_data[first_sheet_name]
+        
+        return None
+    
+    def _extract_basic_info(self, patient_id: str, basic_info_df: pd.DataFrame) -> Dict[str, any]:
+        """
+        从基本信息Sheet中提取患者基本信息
+        
+        Args:
+            patient_id: 患者ID
+            basic_info_df: 基本信息DataFrame
+            
+        Returns:
+            包含基本信息的字典
+        """
+        basic_info = {
+            'name': None,
+            'birthday': None,
+            'age': None,
+            'gender': None,
+            'enrollment_date': None,
+            'group_name': None,
+        }
+        
+        # 查找该患者在基本信息表中的行
+        patient_rows = basic_info_df[basic_info_df['subjid'] == patient_id] if 'subjid' in basic_info_df.columns else None
+        
+        if patient_rows is None or len(patient_rows) == 0:
+            logger.debug(f"患者{patient_id}在基本信息表中无数据")
+            return basic_info
+        
+        row = patient_rows.iloc[0]
+        
+        # 提取姓名
+        name_value = self._get_field_value(row, self.FIELD_MAPPING['patient_name'])
+        if name_value is not None:
+            basic_info['name'] = str(name_value)
+        
+        # 提取生日
+        birthday_value = self._get_field_value(row, self.FIELD_MAPPING['birthday'])
+        basic_info['birthday'] = self._parse_date(birthday_value)
+        
+        # 提取入组日期
+        enroll_date = self._get_field_value(row, self.FIELD_MAPPING['enrollment_date'])
+        basic_info['enrollment_date'] = self._parse_date(enroll_date)
+        
+        # 提取年龄
+        if 'sys_currentage' in row.index and pd.notna(row['sys_currentage']):
+            try:
+                basic_info['age'] = int(row['sys_currentage'])
+            except (ValueError, TypeError):
+                pass
+        
+        # 提取性别
+        if 'stsex' in row.index:
+            gender_value = row['stsex']
+            if pd.notna(gender_value):
+                try:
+                    gender_int = int(gender_value)
+                    basic_info['gender'] = '男' if gender_int == 1 else '女'
+                except (ValueError, TypeError):
+                    basic_info['gender'] = str(gender_value)
+        
+        # 提取分组
+        if 'groupname' in row.index:
+            basic_info['group_name'] = row['groupname'] if pd.notna(row['groupname']) else None
+        
+        return basic_info
+    
     def _create_longitudinal_record(self, patient_id: str) -> Optional[LongitudinalPatientRecord]:
         """
         为单个患者创建纵向记录
@@ -297,10 +385,17 @@ class LongitudinalDataImporter:
             LongitudinalPatientRecord或None
         """
         time_points: List[TimePointData] = []
-        patient_enrollment_date: Optional[date] = None
-        patient_age: Optional[int] = None
-        patient_gender: Optional[str] = None
-        patient_group: Optional[str] = None
+        
+        # 首先从基本信息表中提取患者基本信息
+        basic_info_df = self._get_basic_info_sheet()
+        basic_info = self._extract_basic_info(patient_id, basic_info_df) if basic_info_df is not None else {}
+        
+        patient_name: Optional[str] = basic_info.get('name')
+        patient_birthday: Optional[date] = basic_info.get('birthday')
+        patient_enrollment_date: Optional[date] = basic_info.get('enrollment_date')
+        patient_age: Optional[int] = basic_info.get('age')
+        patient_gender: Optional[str] = basic_info.get('gender')
+        patient_group: Optional[str] = basic_info.get('group_name')
         
         # 从每个Sheet中提取该患者的数据
         for sheet_name, df in self.sheet_data.items():
@@ -321,29 +416,10 @@ class LongitudinalDataImporter:
             
             row = patient_rows.iloc[0]
             
-            # 提取患者基本信息（仅需提取一次）
+            # 如果基本信息表中没有入组日期，尝试从当前sheet获取（向后兼容）
             if patient_enrollment_date is None:
                 enroll_date = self._get_field_value(row, self.FIELD_MAPPING['enrollment_date'])
                 patient_enrollment_date = self._parse_date(enroll_date)
-                
-                if 'sys_currentage' in row.index and pd.notna(row['sys_currentage']):
-                    try:
-                        patient_age = int(row['sys_currentage'])
-                    except (ValueError, TypeError):
-                        patient_age = None
-                
-                if 'stsex' in row.index:
-                    gender_value = row['stsex']
-                    if pd.notna(gender_value):
-                        # 转换数字性别为字符串（0=女, 1=男）
-                        try:
-                            gender_int = int(gender_value)
-                            patient_gender = '男' if gender_int == 1 else '女'
-                        except (ValueError, TypeError):
-                            patient_gender = str(gender_value)
-                
-                if 'groupname' in row.index:
-                    patient_group = row['groupname'] if pd.notna(row['groupname']) else None
             
             # 提取时间点数据
             time_point_data = self._extract_time_point_data(row, time_point_name, months)
@@ -356,7 +432,9 @@ class LongitudinalDataImporter:
         # 创建纵向患者记录
         record = LongitudinalPatientRecord(
             patient_id=str(patient_id),
+            patient_name=patient_name,
             enrollment_date=patient_enrollment_date,
+            birthday=patient_birthday,
             age=patient_age,
             gender=patient_gender,
             group_name=patient_group,

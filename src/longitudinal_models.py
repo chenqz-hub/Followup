@@ -40,7 +40,9 @@ class TimePointData(BaseModel):
 class LongitudinalPatientRecord(BaseModel):
     """纵向患者记录 - 包含多个时间点的数据"""
     patient_id: str = Field(..., description="患者ID")
+    patient_name: Optional[str] = Field(None, description="患者姓名")
     enrollment_date: date = Field(..., description="入组日期")
+    birthday: Optional[date] = Field(None, description="出生日期")
     age: Optional[int] = Field(None, description="入组时年龄")
     gender: Optional[str] = Field(None, description="性别")
     group_name: Optional[str] = Field(None, description="分组名称")
@@ -75,7 +77,9 @@ class LongitudinalPatientRecord(BaseModel):
         """转换为随访记录字典用于导出"""
         return {
             'patient_id': self.patient_id,
+            'patient_name': self.patient_name,
             'enrollment_date': self.enrollment_date.isoformat() if self.enrollment_date else None,
+            'birthday': self.birthday.isoformat() if self.birthday else None,
             'age': self.age,
             'gender': self.gender,
             'group_name': self.group_name,
@@ -95,7 +99,9 @@ class LongitudinalPatientRecord(BaseModel):
 class LongitudinalFollowupRecord(BaseModel):
     """纵向随访记录 - 最终输出"""
     patient_id: str = Field(..., description="患者ID")
+    patient_name: Optional[str] = Field(None, description="患者姓名")
     enrollment_date: date = Field(..., description="入组日期")
+    birthday: Optional[date] = Field(None, description="出生日期")
     
     # 随访时间信息
     latest_followup_date: Optional[date] = Field(None, description="最晚随访日期")
@@ -191,6 +197,11 @@ class LongitudinalFollowupRecord(BaseModel):
         """转换为展平的字典（用于导出表格）"""
         return {
             'patient_id': self.patient_id,
+            'patient_name': self.patient_name,
+            'birthday': self.birthday.isoformat() if self.birthday else None,
+            'age': self.age,
+            'gender': self.gender,
+            'group_name': self.group_name,
             'enrollment_date': self.enrollment_date.isoformat(),
             'latest_followup_date': self.latest_followup_date.isoformat() if self.latest_followup_date else None,
             'latest_followup_months': self.latest_followup_months,
@@ -241,9 +252,6 @@ class LongitudinalFollowupRecord(BaseModel):
             'has_death': self.has_death,
             'has_cardiovascular_event': self.has_cardiovascular_event,
             'has_lost_to_followup': self.has_lost_to_followup,
-            'age': self.age,
-            'gender': self.gender,
-            'group_name': self.group_name,
             'total_followup_status': self.total_followup_status,
             # Survival analysis fields
             'event_occurred': getattr(self, 'event_occurred', None),

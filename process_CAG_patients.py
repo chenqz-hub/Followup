@@ -170,13 +170,15 @@ def process_cag_patients(excel_file_path: str, endpoint: str = 'death'):
     try:
         survival_cols = [
             'patient_id',
-            'survival_time_days',
-            'event_occurred',
-            'endpoint_event',
+            'patient_name',
+            'birthday',
             'age',
             'gender',
             'group_name',
-            'enrollment_date'
+            'enrollment_date',
+            'survival_time_days',
+            'event_occurred',
+            'endpoint_event'
         ]
         
         existing_cols = [c for c in survival_cols if c in df.columns]

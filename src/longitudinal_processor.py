@@ -178,7 +178,9 @@ class LongitudinalEventProcessor:
         # 创建最终随访记录
         followup_record = LongitudinalFollowupRecord(
             patient_id=patient_record.patient_id,
+            patient_name=patient_record.patient_name,
             enrollment_date=patient_record.enrollment_date,
+            birthday=patient_record.birthday,
             age=patient_record.age,
             gender=patient_record.gender,
             group_name=patient_record.group_name,
