@@ -1,0 +1,78 @@
+# Follow-up Data Processing Configuration
+
+# 数据源配置
+data_source:
+  # 数据库类型: sqlite, mysql, postgresql
+  type: "sqlite"
+  # 数据库连接字符串 (根据实际需要修改)
+  connection_string: "data/cad_database.db"
+  
+# 患者入组时间配置
+patient:
+  # 入组时间字段名
+  enrollment_date_field: "enrollment_date"
+  # 患者ID字段名
+  patient_id_field: "patient_id"
+
+# 事件配置
+events:
+  # 事件类型定义及其对应的数据库字段
+  types:
+    # 死亡事件
+    death:
+      field_names: ["death_date", "patient_death"]
+      priority: 1
+      
+    # 心肌梗死
+    myocardial_infarction:
+      field_names: ["mi_date", "first_mi_date", "myocardial_infarction"]
+      priority: 2
+      
+    # 脑卒中
+    stroke:
+      field_names: ["stroke_date", "first_stroke_date", "cerebral_stroke"]
+      priority: 3
+      
+    # 血运重建 (PCI/CABG)
+    revascularization:
+      field_names: ["revascularization_date", "pci_date", "cabg_date"]
+      priority: 4
+      
+    # 住院
+    hospitalization:
+      field_names: ["hospitalization_date", "hospital_admission"]
+      priority: 5
+      
+    # 其他事件
+    other:
+      field_names: ["event_date", "other_event"]
+      priority: 6
+
+# 输出配置
+output:
+  # 输出格式: csv, excel
+  format: "excel"
+  # 输出文件路径
+  output_dir: "output"
+  # 输出文件名 (时间戳会自动添加)
+  filename_prefix: "followup_data"
+  # 是否包含详细日志列
+  include_details: true
+
+# 日志配置
+logging:
+  level: "INFO"
+  log_dir: "logs"
+  max_log_size: 10485760  # 10MB
+  backup_count: 5
+
+# 数据处理配置
+processing:
+  # 是否跳过无效记录
+  skip_invalid_records: true
+  # 是否自动填补缺失值
+  fill_missing_values: true
+  # 无效日期处理: skip, fill_with_null, fill_with_today
+  invalid_date_handling: "skip"
+  # 最大允许的日期差异 (天数，用于异常检测)
+  max_days_from_enrollment: 36500  # 约100年

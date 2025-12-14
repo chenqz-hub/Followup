@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "followup-processor"
+version = "1.0.0"
+description = "CAD Database Follow-up Information Extraction and Processing Tool"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "CAD Research Team"}
+]
+requires-python = ">=3.8"
+dependencies = [
+    "pandas>=1.3.0",
+    "numpy>=1.21.0",
+    "openpyxl>=3.6.0",
+    "python-dateutil>=2.8.2",
+    "pyyaml>=5.4.0",
+    "pydantic>=1.8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.2.0",
+    "pytest-cov>=2.12.0",
+    "black>=21.0",
+    "flake8>=3.9.0",
+    "mypy>=0.910",
+]
+
+[tool.setuptools]
+packages = ["followup"]
+
+[tool.black]
+line-length = 100
+target-version = ['py38']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+addopts = "-v --cov=src --cov-report=html"
