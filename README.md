@@ -86,10 +86,11 @@ Followup/
 │   ├── test_data_models.py      # 数据模型测试
 │   ├── test_event_processor.py  # 事件处理器测试
 │   └── simple_test.py           # [新]纵向数据测试
-├── examples/                     # 示例脚本
-│   ├── example_*.py             # 各种示例
-│   └── run_longitudinal_processing.py  # [新]纵向处理完整示例
-├── data/                         # 数据目录（输入数据存放处）
+├── scripts/                      # 运行器脚本（process_PCI_patients.py / process_CAG_patients.py）
+├── docs/                         # 项目文档和开发说明
+├── data/                         # 数据目录
+│   ├── raw/                      # 原始输入数据（Excel/CSV）
+│   └── processed/                # 可选：处理后和中间数据
 ├── output/                       # 输出目录（处理结果）
 ├── logs/                         # 日志目录
 ├── LONGITUDINAL_README.md        # [新]纵向数据处理详细指南
