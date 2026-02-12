@@ -10,6 +10,7 @@
 ## 快速导航
 
 - [快速开始](docs/QUICKSTART.md) - 5分钟上手指南
+- [**自动提取工具**](docs/AUTO_EXTRACTION.md) - ⭐ 一键从原始文件提取和处理数据
 - [完整文档](#文档) - 详细功能说明
 - [开发指南](docs/DEVELOPMENT.md) - 开发者文档
 - [贡献指南](CONTRIBUTING.md) - 如何贡献
@@ -198,6 +199,45 @@ python src/main.py
 ```
 followup_data_YYYYMMDD_HHMMSS.xlsx
 ```
+
+## ⭐ 新功能：一键式数据提取和处理
+
+对于包含多个sheet的大型原始文件（如含80个sheet的"20250924 CAG组.xlsx"），我们提供了自动提取工具，**无需手动整理Excel文件**：
+
+### 最简单的使用方式
+
+```bash
+# 一键完成提取和处理
+python scripts/extract_and_process.py
+```
+
+程序会：
+1. 弹出文件选择对话框
+2. 自动识别所有"随访表1" sheet
+3. 自动提取并规范化时间点名称（"第三个月" → "3个月"）
+4. 自动处理数据并生成宽格式、长格式输出
+5. 询问是否保留中间文件
+
+### 或指定文件路径
+
+```bash
+python scripts/extract_and_process.py "data/raw/20250924  CAG 组.xlsx"
+```
+
+### 工作流程
+
+```
+原始大文件 (80 sheets)
+    ↓ 自动识别并提取
+临时文件 (7个规范化的随访表1 sheets)
+    ↓ 自动处理
+最终输出 (*_wide.xlsx, *_long.xlsx)
+```
+
+### 详细文档
+
+完整的使用说明、技术细节和常见问题，请参阅：
+📖 **[自动提取工具文档](docs/AUTO_EXTRACTION.md)**
 
 ### 纵向数据处理 （新增）
 
