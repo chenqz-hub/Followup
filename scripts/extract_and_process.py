@@ -74,7 +74,7 @@ def extract_followup_sheets(input_file: Path, output_file: Path) -> None:
         input_file: 原始Excel文件路径
         output_file: 输出Excel文件路径
     """
-    logger = setup_logger()
+    logger = setup_logger("extract_followup")
 
     logger.info(f"\n正在读取原始文件: {input_file}")
     logger.info(f"文件大小: {input_file.stat().st_size / (1024*1024):.1f} MB")
@@ -144,7 +144,7 @@ def process_extracted_file(excel_file_path: str, patient_group: str = "CAG") -> 
     Returns:
         bool: 处理是否成功
     """
-    logger = setup_logger()
+    logger = setup_logger("process_followup")
 
     logger.info("=" * 60)
     logger.info("开始处理纵向随访数据")
@@ -156,16 +156,18 @@ def process_extracted_file(excel_file_path: str, patient_group: str = "CAG") -> 
         # 1. 导入数据
         logger.info("\n步骤 1/3: 导入数据")
         importer = LongitudinalDataImporter()
-        data_dict = importer.load_excel_file(excel_file_path)
-        logger.info(f"✅ 成功导入 {len(data_dict)} 个时间点的数据")
+        if not importer.load_excel_file(excel_file_path):
+            logger.error("❌ 加载文件失败")
+            return False
+        logger.info(f"✅ 成功导入 {len(importer.sheet_data)} 个时间点的数据")
 
         # 2. 导入纵向数据
-        logger.info("\n步骤 2/4: 导入纵向患者记录")
+        logger.info("\n步骤 2/3: 导入纵向患者记录")
         longitudinal_records = importer.import_longitudinal_data()
         logger.info(f"✅ 成功导入 {len(longitudinal_records)} 条患者记录")
 
         # 3. 处理事件
-        logger.info("\n步骤 3/4: 处理事件数据")
+        logger.info("\n步骤 3/3: 处理事件数据")
         processor = LongitudinalEventProcessor(endpoint="death")
         followup_records = processor.process_batch(longitudinal_records)
         logger.info(f"✅ 成功处理 {len(followup_records)} 条随访记录")
@@ -179,15 +181,42 @@ def process_extracted_file(excel_file_path: str, patient_group: str = "CAG") -> 
         output_dir = project_root / "output"
         output_dir.mkdir(exist_ok=True)
 
+        # 导出完整Excel
         output_filename = f"{patient_group}_followup_results_{timestamp}.xlsx"
         output_path = output_dir / output_filename
-
         df_output.to_excel(output_path, index=False, engine="openpyxl")
+        logger.info(f"✅ Excel已导出: {output_filename}")
+
+        # 导出生存分析CSV
+        survival_filename = f"survival_{patient_group}_{timestamp}.csv"
+        try:
+            survival_cols = [
+                "patient_id",
+                "patient_name",
+                "birthday",
+                "age",
+                "gender",
+                "group_name",
+                "enrollment_date",
+                "survival_time_days",
+                "event_occurred",
+                "endpoint_event",
+            ]
+            existing_cols = [c for c in survival_cols if c in df_output.columns]
+            survival_df = df_output[existing_cols].copy()
+
+            survival_path = output_dir / survival_filename
+            survival_df.to_csv(survival_path, index=False)
+            logger.info(f"✅ 生存分析CSV已导出: {survival_filename}")
+        except Exception as e:
+            logger.warning(f"⚠️ 生存分析CSV导出失败: {e}")
 
         logger.info("\n" + "=" * 60)
         logger.info("✅ 处理完成！")
         logger.info("=" * 60)
-        logger.info(f"输出文件: {output_path}")
+        logger.info(f"输出文件:")
+        logger.info(f"  - {output_filename}")
+        logger.info(f"  - {survival_filename}")
         logger.info(f"患者数量: {len(followup_records)}")
 
         # 统计信息
@@ -198,6 +227,20 @@ def process_extracted_file(excel_file_path: str, patient_group: str = "CAG") -> 
             f"  - 发生事件: {has_event} ({has_event/len(followup_records)*100:.1f}%)"
         )
         logger.info(f"  - 无事件: {len(followup_records) - has_event}")
+        
+        # 详细事件分布
+        logger.info(f"\n详细事件分布:")
+        event_details = {
+            "心绞痛": df_output["first_angina_date"].notna().sum() if "first_angina_date" in df_output.columns else 0,
+            "住院": df_output["first_hospitalization_date"].notna().sum() if "first_hospitalization_date" in df_output.columns else 0,
+            "心肌梗死": df_output["first_mi_date"].notna().sum() if "first_mi_date" in df_output.columns else 0,
+            "心衰": df_output["first_heart_failure_date"].notna().sum() if "first_heart_failure_date" in df_output.columns else 0,
+            "血运重建": df_output["first_revascularization_date"].notna().sum() if "first_revascularization_date" in df_output.columns else 0,
+            "死亡": df_output["first_death_date"].notna().sum() if "first_death_date" in df_output.columns else 0,
+        }
+        for event_name, count in event_details.items():
+            if count > 0:
+                logger.info(f"  - {event_name}: {count} 例")
 
         return True
 
@@ -211,7 +254,7 @@ def process_extracted_file(excel_file_path: str, patient_group: str = "CAG") -> 
 
 def main():
     """主函数"""
-    logger = setup_logger()
+    logger = setup_logger("extract_and_process")
 
     logger.info("\n" + "=" * 60)
     logger.info("随访表自动提取和处理工具")

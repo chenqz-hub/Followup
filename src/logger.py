@@ -47,7 +47,9 @@ def setup_logger(
 
     # 文件处理器 (带轮转)
     log_file = os.path.join(log_dir, f"{name}_{datetime.now().strftime('%Y%m%d')}.log")
-    file_handler = RotatingFileHandler(log_file, maxBytes=max_bytes, backupCount=backup_count)
+    file_handler = RotatingFileHandler(
+        log_file, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8"
+    )
     file_handler.setLevel(getattr(logging, level))
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
@@ -56,6 +58,7 @@ def setup_logger(
     console_handler = logging.StreamHandler()
     console_handler.setLevel(getattr(logging, level))
     console_handler.setFormatter(formatter)
+    console_handler.stream.reconfigure(encoding="utf-8")
     logger.addHandler(console_handler)
 
     return logger
