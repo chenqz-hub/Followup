@@ -46,9 +46,7 @@ venv.bak/
 logs/
 output/
 *.log
-data/*.csv
-data/*.xlsx
-data/*.db
+data/
 
 # Test
 .pytest_cache/
