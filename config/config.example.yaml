@@ -1,0 +1,226 @@
+# Follow-up Data Processing Configuration Example
+
+# ============================================================================
+# 数据源配置
+# ============================================================================
+data_source:
+  # 数据源类型: "sqlite", "csv", "excel"
+  type: "csv"
+  
+  # 数据源连接字符串/路径
+  # - SQLite: 数据库文件路径，如 "data/cad_database.db"
+  # - CSV: CSV文件路径，如 "data/raw/patients.csv"
+  # - Excel: Excel文件路径，如 "data/raw/patients.xlsx"
+  connection_string: "data/raw/patients.csv"
+  
+  # Excel选项（仅当type为excel时）
+  sheet_name: "Sheet1"  # Sheet名称，默认为第一个sheet
+
+# ============================================================================
+# 患者数据字段映射
+# ============================================================================
+patient:
+  # 患者ID字段名
+  patient_id_field: "patient_id"
+  
+  # 入组日期字段名
+  enrollment_date_field: "enrollment_date"
+  
+  # 其他可选字段
+  # age_field: "age"
+  # gender_field: "gender"
+
+# ============================================================================
+# 事件类型配置
+# ============================================================================
+events:
+  types:
+    # 死亡事件
+    death:
+      # 数据中可能的字段名列表（按优先级）
+      field_names: 
+        - "death_date"
+        - "patient_death"
+        - "死亡日期"
+      # 事件优先级（数字越小优先级越高，同一天的多个事件选择优先级最高的）
+      priority: 1
+      
+    # 心肌梗死
+    myocardial_infarction:
+      field_names: 
+        - "mi_date"
+        - "first_mi_date"
+        - "myocardial_infarction"
+        - "心梗日期"
+      priority: 2
+      
+    # 脑卒中
+    stroke:
+      field_names: 
+        - "stroke_date"
+        - "first_stroke_date"
+        - "cerebral_stroke"
+        - "脑卒中日期"
+      priority: 3
+      
+    # 血运重建 (PCI/CABG)
+    revascularization:
+      field_names: 
+        - "revascularization_date"
+        - "pci_date"
+        - "cabg_date"
+        - "血运重建日期"
+      priority: 4
+      
+    # 再住院
+    hospitalization:
+      field_names: 
+        - "hospitalization_date"
+        - "hospital_admission"
+        - "再住院日期"
+      priority: 5
+      
+    # 其他心血管事件
+    cardiovascular_event:
+      field_names: 
+        - "cv_event_date"
+        - "cardiovascular_event"
+      priority: 6
+      
+    # 其他事件
+    other:
+      field_names: 
+        - "event_date"
+        - "other_event"
+      priority: 10
+
+# ============================================================================
+# 日期处理配置
+# ============================================================================
+date_handling:
+  # 日期格式列表（按顺序尝试）
+  date_formats:
+    - "%Y-%m-%d"          # 2020-01-01
+    - "%Y/%m/%d"          # 2020/01/01
+    - "%Y年%m月%d日"      # 2020年1月1日
+    - "%d/%m/%Y"          # 01/01/2020
+  
+  # 无效日期的处理方式
+  # - "skip": 跳过该事件
+  # - "null": 使用NULL/None
+  # - "today": 使用当前日期
+  invalid_date_action: "skip"
+  
+  # 是否自动处理Excel日期码
+  handle_excel_dates: true
+
+# ============================================================================
+# 输出配置
+# ============================================================================
+output:
+  # 输出格式: "csv" 或 "excel"
+  format: "excel"
+  
+  # 输出文件路径
+  file_path: "output/followup_results.xlsx"
+  
+  # 输出字段配置
+  fields:
+    # 是否包含入组日期
+    include_enrollment_date: true
+    
+    # 是否包含事件日期
+    include_event_date: true
+    
+    # 是否包含事件距入组天数
+    include_days_to_event: true
+  
+  # Excel特定选项
+  excel_options:
+    # 是否自动调整列宽
+    auto_column_width: true
+    
+    # 是否冻结首行
+    freeze_first_row: true
+    
+    # Sheet名称
+    sheet_name: "随访数据"
+
+# ============================================================================
+# 日志配置
+# ============================================================================
+logging:
+  # 日志级别: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: "INFO"
+  
+  # 日志文件目录
+  log_dir: "logs"
+  
+  # 单个日志文件最大大小（字节）
+  max_log_size: 10485760  # 10MB
+  
+  # 保留的日志文件数量
+  backup_count: 5
+  
+  # 日志格式
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+  # 是否同时输出到控制台
+  console_output: true
+
+# ============================================================================
+# 高级选项
+# ============================================================================
+advanced:
+  # 同一天多个事件的处理策略
+  # - "priority": 按优先级选择
+  # - "first": 选择第一个
+  # - "all": 保留所有（生成多条记录）
+  same_day_event_strategy: "priority"
+  
+  # 是否跳过没有事件的患者
+  skip_patients_without_events: false
+  
+  # 最大记录数限制（0表示无限制）
+  max_records: 0
+  
+  # 数据验证
+  validation:
+    # 是否验证患者ID唯一性
+    check_unique_patient_id: true
+    
+    # 是否验证日期合理性（事件日期应晚于入组日期）
+    check_date_logic: true
+
+# ============================================================================
+# 示例配置说明
+# ============================================================================
+# 
+# 1. 最简配置（仅必需字段）：
+#    data_source:
+#      type: "csv"
+#      connection_string: "data/patients.csv"
+#    patient:
+#      patient_id_field: "id"
+#      enrollment_date_field: "enroll_date"
+#    events:
+#      types:
+#        death:
+#          field_names: ["death_date"]
+#          priority: 1
+#    output:
+#      format: "excel"
+#      file_path: "output/result.xlsx"
+#
+# 2. 多数据源示例：
+#    - CSV: connection_string: "data/patients.csv"
+#    - Excel: connection_string: "data/patients.xlsx"
+#    - SQLite: connection_string: "data/database.db"
+#
+# 3. 自定义事件类型：
+#    在 events.types 下添加新的事件类型，指定字段名和优先级
+#
+# 4. 日志调试：
+#    将 logging.level 设置为 "DEBUG" 可查看详细处理过程
+#
+# ============================================================================

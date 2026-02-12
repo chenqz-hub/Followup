@@ -53,6 +53,17 @@ data/
 htmlcov/
 .coverage
 .coverage.*
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
 
 # OS
 .DS_Store

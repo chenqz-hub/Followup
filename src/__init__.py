@@ -6,9 +6,9 @@ Follow-up Data Processing Tool
 __version__ = "1.0.0"
 __author__ = "CAD Research Team"
 
-from logger import setup_logger
-from config import Config
-from data_models import PatientRecord, FollowupRecord, EventInfo
+from .logger import setup_logger
+from .config import Config
+from .data_models import PatientRecord, FollowupRecord, EventInfo
 
 __all__ = [
     "setup_logger",

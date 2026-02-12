@@ -1,0 +1,49 @@
+# Pre-commit hooks配置
+# 安装: pip install pre-commit
+# 设置: pre-commit install
+
+repos:
+  # Python代码格式化
+  - repo: https://github.com/psf/black
+    rev: 24.1.1
+    hooks:
+      - id: black
+        language_version: python3.8
+
+  # Python代码风格检查
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        args: ['--config=.flake8']
+
+  # 导入排序
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--profile", "black", "--line-length", "100"]
+
+  # YAML格式检查
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: debug-statements
+
+  # 类型检查
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        additional_dependencies: [
+          'pandas-stubs',
+          'types-PyYAML',
+          'types-python-dateutil',
+        ]
+        args: ["--config-file=pyproject.toml"]

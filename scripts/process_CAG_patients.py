@@ -12,7 +12,7 @@ from tkinter import Tk, filedialog
 # Set paths (project root is repo root)
 project_root = Path(__file__).resolve().parent.parent
 os.chdir(project_root)
-sys.path.insert(0, str(project_root / 'src'))
+sys.path.insert(0, str(project_root / "src"))
 
 from config import Config
 from longitudinal_importer import LongitudinalDataImporter
@@ -23,20 +23,20 @@ import pandas as pd
 def select_excel_file(default_path: str = None) -> str:
     root = Tk()
     root.withdraw()
-    root.attributes('-topmost', True)
-    initial_dir = str(project_root / 'data')
+    root.attributes("-topmost", True)
+    initial_dir = str(project_root / "data")
     if default_path and Path(default_path).exists():
         initial_dir = str(Path(default_path).parent)
     file_path = filedialog.askopenfilename(
-        title='选择CAG组患者数据文件',
+        title="选择CAG组患者数据文件",
         initialdir=initial_dir,
-        filetypes=[('Excel files', '*.xlsx *.xls'), ('All files', '*.*')]
+        filetypes=[("Excel files", "*.xlsx *.xls"), ("All files", "*.*")],
     )
     root.destroy()
     return file_path if file_path else None
 
 
-def process_cag_patients(excel_file_path: str, endpoint: str = 'death'):
+def process_cag_patients(excel_file_path: str, endpoint: str = "death"):
     print("Processing (scripts/process_CAG_patients.py)")
     importer = LongitudinalDataImporter()
     if not importer.load_excel_file(excel_file_path):
@@ -52,9 +52,18 @@ def process_cag_patients(excel_file_path: str, endpoint: str = 'death'):
     df = pd.DataFrame(output_data)
     excel_file = f"longitudinal_cag_output_{timestamp}.xlsx"
     excel_path = output_dir / excel_file
-    df.to_excel(str(excel_path), sheet_name='Followup Data', index=False)
+    df.to_excel(str(excel_path), sheet_name="Followup Data", index=False)
     survival_cols = [
-        'patient_id','patient_name','birthday','age','gender','group_name','enrollment_date','survival_time_days','event_occurred','endpoint_event'
+        "patient_id",
+        "patient_name",
+        "birthday",
+        "age",
+        "gender",
+        "group_name",
+        "enrollment_date",
+        "survival_time_days",
+        "event_occurred",
+        "endpoint_event",
     ]
     existing_cols = [c for c in survival_cols if c in df.columns]
     survival_df = df[existing_cols].copy()
@@ -66,8 +75,10 @@ def process_cag_patients(excel_file_path: str, endpoint: str = 'death'):
 
 
 def main():
-    default_excel_file = str(project_root / 'data' / 'extracted_PSM93_cases_20251104_221914_随访表1_20251106_121718.xlsx')
-    endpoint = 'death'
+    default_excel_file = str(
+        project_root / "data" / "extracted_PSM93_cases_20251104_221914_随访表1_20251106_121718.xlsx"
+    )
+    endpoint = "death"
     excel_file = select_excel_file(default_excel_file)
     if not excel_file:
         print("No file selected")
@@ -75,6 +86,6 @@ def main():
     return process_cag_patients(excel_file, endpoint)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     success = main()
     sys.exit(0 if success else 1)

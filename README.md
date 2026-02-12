@@ -1,5 +1,20 @@
 # Follow-up Data Processing Tool
 
+[![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Checked with mypy](https://img.shields.io/badge/mypy-checked-blue)](http://mypy-lang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+> 专业的冠心病（CAD）患者随访数据处理工具，遵循软件工程最佳实践
+
+## 快速导航
+
+- [快速开始](docs/QUICKSTART.md) - 5分钟上手指南
+- [完整文档](#文档) - 详细功能说明
+- [开发指南](docs/DEVELOPMENT.md) - 开发者文档
+- [贡献指南](CONTRIBUTING.md) - 如何贡献
+- [更新日志](CHANGELOG.md) - 版本历史
+
 ## 概述
 
 这是一个用于从冠心病（CAD）数据库中自动提取患者随访信息的工具。它能够：
