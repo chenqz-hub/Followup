@@ -22,12 +22,11 @@ import pandas as pd
 # Set paths
 project_root = Path(__file__).resolve().parent.parent
 os.chdir(project_root)
-sys.path.insert(0, str(project_root / "src"))
+sys.path.insert(0, str(project_root))
 
-from longitudinal_importer import LongitudinalDataImporter
-from longitudinal_processor import LongitudinalFollowupProcessor
-from data_exporter import DataExporter
-from logger import setup_logger
+from src.longitudinal_importer import LongitudinalDataImporter
+from src.longitudinal_processor import LongitudinalEventProcessor
+from src.logger import setup_logger
 
 
 def extract_time_point_from_sheet_name(sheet_name: str) -> str:
@@ -160,33 +159,45 @@ def process_extracted_file(excel_file_path: str, patient_group: str = "CAG") -> 
         data_dict = importer.load_excel_file(excel_file_path)
         logger.info(f"✅ 成功导入 {len(data_dict)} 个时间点的数据")
 
-        # 2. 处理数据
-        logger.info("\n步骤 2/3: 处理随访数据")
-        processor = LongitudinalFollowupProcessor()
-        wide_format, long_format = processor.process_followup_data(data_dict)
-        logger.info(f"✅ 处理完成:")
-        logger.info(f"  - 宽格式数据: {len(wide_format)} 行")
-        logger.info(f"  - 长格式数据: {len(long_format)} 行")
+        # 2. 导入纵向数据
+        logger.info("\n步骤 2/4: 导入纵向患者记录")
+        longitudinal_records = importer.import_longitudinal_data()
+        logger.info(f"✅ 成功导入 {len(longitudinal_records)} 条患者记录")
 
-        # 3. 导出结果
-        logger.info("\n步骤 3/3: 导出结果")
+        # 3. 处理事件
+        logger.info("\n步骤 3/4: 处理事件数据")
+        processor = LongitudinalEventProcessor(endpoint="death")
+        followup_records = processor.process_batch(longitudinal_records)
+        logger.info(f"✅ 成功处理 {len(followup_records)} 条随访记录")
+
+        # 4. 导出结果
+        logger.info("\n步骤 4/4: 导出结果")
+        output_data = [record.to_flattened_dict() for record in followup_records]
+        df_output = pd.DataFrame(output_data)
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_dir = project_root / "output"
         output_dir.mkdir(exist_ok=True)
 
-        output_prefix = output_dir / f"{patient_group}_followup_results_{timestamp}"
-        exporter = DataExporter(str(output_prefix))
+        output_filename = f"{patient_group}_followup_results_{timestamp}.xlsx"
+        output_path = output_dir / output_filename
 
-        exporter.export_wide_format(wide_format, "宽格式数据")
-        exporter.export_long_format(long_format, "长格式数据")
+        df_output.to_excel(output_path, index=False, engine="openpyxl")
 
         logger.info("\n" + "=" * 60)
         logger.info("✅ 处理完成！")
         logger.info("=" * 60)
-        logger.info(f"输出文件:")
-        logger.info(f"  - {output_prefix}_wide.xlsx")
-        logger.info(f"  - {output_prefix}_long.xlsx")
-        logger.info(f"\n患者数量: {len(wide_format)}")
+        logger.info(f"输出文件: {output_path}")
+        logger.info(f"患者数量: {len(followup_records)}")
+
+        # 统计信息
+        has_event = sum(1 for r in followup_records if r.first_event_date is not None)
+        logger.info(f"\n统计:")
+        logger.info(f"  - 总患者数: {len(followup_records)}")
+        logger.info(
+            f"  - 发生事件: {has_event} ({has_event/len(followup_records)*100:.1f}%)"
+        )
+        logger.info(f"  - 无事件: {len(followup_records) - has_event}")
 
         return True
 

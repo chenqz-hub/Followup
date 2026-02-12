@@ -12,12 +12,12 @@ from tkinter import Tk, filedialog
 # Set paths (project root is repo root)
 project_root = Path(__file__).resolve().parent.parent
 os.chdir(project_root)
-sys.path.insert(0, str(project_root / "src"))
+sys.path.insert(0, str(project_root))
 
 # Import modules
-from config import Config
-from longitudinal_importer import LongitudinalDataImporter
-from longitudinal_processor import LongitudinalEventProcessor
+from src.config import Config
+from src.longitudinal_importer import LongitudinalDataImporter
+from src.longitudinal_processor import LongitudinalEventProcessor
 import pandas as pd
 
 

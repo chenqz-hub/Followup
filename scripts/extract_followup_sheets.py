@@ -107,27 +107,53 @@ def extract_followup_sheets(input_file: Path, output_file: Path) -> None:
     print(f"输出文件大小: {output_file.stat().st_size / 1024:.1f} KB")
 
 
+def detect_patient_group(filename: str) -> str:
+    """
+    从文件名中识别患者组类型
+    
+    Args:
+        filename: 文件名
+        
+    Returns:
+        患者组类型: "PCI" 或 "CAG"
+    """
+    filename_upper = filename.upper()
+    if "PCI" in filename_upper:
+        return "PCI"
+    elif "CAG" in filename_upper:
+        return "CAG"
+    return "Unknown"
+
+
 def main():
     """主函数"""
-    # 设置默认路径
-    default_input = Path(__file__).parent.parent / "data" / "raw" / "20250924  CAG 组.xlsx"
-
-    # 生成带时间戳的输出文件名
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    default_output = (
-        Path(__file__).parent.parent / "data" / "raw" / f"extracted_CAG_followup_{timestamp}.xlsx"
-    )
-
+    data_dir = Path(__file__).parent.parent / "data" / "raw"
+    
     # 从命令行参数获取路径（如果提供）
     if len(sys.argv) > 1:
         input_file = Path(sys.argv[1])
     else:
+        # 没有提供参数，默认使用CAG组文件
+        default_input = data_dir / "20250924  CAG 组.xlsx"
         input_file = default_input
 
+    # 验证输入文件存在
+    if not input_file.exists():
+        print(f"错误: 输入文件不存在: {input_file}")
+        print(f"\n提示: 请指定输入文件路径，例如:")
+        print(f'  python scripts/extract_followup_sheets.py "data/raw/20250924  PCI组.xlsx"')
+        sys.exit(1)
+
+    # 自动识别患者组类型并生成输出文件名
+    patient_group = detect_patient_group(input_file.name)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
     if len(sys.argv) > 2:
         output_file = Path(sys.argv[2])
     else:
-        output_file = default_output
+        # 根据患者组类型生成输出文件名
+        output_filename = f"extracted_{patient_group}_followup_{timestamp}.xlsx"
+        output_file = data_dir / output_filename
 
     # 验证输入文件存在
     if not input_file.exists():
@@ -136,6 +162,15 @@ def main():
 
     # 确保输出目录存在
     output_file.parent.mkdir(parents=True, exist_ok=True)
+
+    # 显示处理信息
+    print(f"\n{'='*60}")
+    print(f"随访表自动提取工具")
+    print(f"{'='*60}")
+    print(f"输入文件: {input_file.name}")
+    print(f"患者组: {patient_group}")
+    print(f"输出文件: {output_file.name}")
+    print(f"{'='*60}")
 
     # 提取数据
     try:
